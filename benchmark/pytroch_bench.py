@@ -13,10 +13,16 @@ def bench_torch(a, b):
     num_samples = a.shape[0]
     res = torch.zeros(num_samples, a.shape[1], b.shape[2], device=a.device, dtype=a.dtype)
 
+    for i in range(3):
+        torch.matmul(a[0], b[0], out=res[0])
+    torch.cuda.synchronize()
+
     cnt = 0.0
     for i in range(num_samples):
+        torch.cuda.synchronize()
         now = time.time()
         torch.matmul(a[i], b[i], out=res[i])
+        torch.cuda.synchronize()
         cnt += time.time() - now
 
     print(f'Time spent avg {cnt / num_samples * 1000:.6f} mcs')
@@ -61,14 +67,17 @@ def main():
     print('torch rect: ', end='')
     bench_torch(*rect_samples)
 
-    print('torch rect cpu: ', end='')
-    bench_torch(*rect_samples_cpu)
+    # print('torch rect cpu: ', end='')
+    # bench_torch(*rect_samples_cpu)
 
     print('torch square: ', end='')
     bench_torch(*square_samples)
 
     print('cutesseract rect: ', end='')
     bench_cutesseract(gemm_nkm_simple_fp32, *rect_samples)
+
+    print('cutesseract square simple: ', end='')
+    bench_cutesseract(gemm_nkm_simple_fp32, *square_samples)
 
     print('cutesseract square: ', end='')
     bench_cutesseract(gemm_nnn_block_simple_fp32_bs16, *square_samples)
